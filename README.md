@@ -15,8 +15,8 @@ Use ansible to install kubernetes cluster platfrom.
 * Install docker: ```ansible-playbook -i inventories/dev/hosts 06docker.yml```.
 * Setup kube-node cluster: ```ansible-playbook -i inventories/dev/hosts 07kube-node.yml```.
 * Setup calico network: ```ansible-playbook -i inventories/dev/hosts 08calico.yml```.
-* Setup dns service in kube: ansible-playbook -i inventories/dev/hosts 09dns.yml.
-* Setup dashboard(UI) for kube: ansible-playbook -i inventories/dev/hosts 10dashboard.yml.
+* Setup dns service in kube: ```ansible-playbook -i inventories/dev/hosts 09dns.yml```.
+* Setup dashboard(UI) for kube: ```ansible-playbook -i inventories/dev/hosts 10dashboard.yml```.
 
 ## Components List
 * Kube Master: multi apiserver, scheduler cluster, controller manager cluster
