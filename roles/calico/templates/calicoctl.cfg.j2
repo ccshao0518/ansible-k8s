@@ -1,0 +1,9 @@
+apiVersion: projectcalico.org/v3
+kind: CalicoAPIConfig
+metadata:
+spec:
+  datastoreType: "etcdv3"
+  etcdEndpoints: {{ ETCD_ENDPOINTS }}
+  etcdKeyFile: /calico-secrets/calico-key.pem
+  etcdCertFile: /calico-secrets/calico.pem
+  etcdCACertFile: /calico-secrets/ca.pem

@@ -1,0 +1,52 @@
+- name: distribute kube-master binaries
+  copy: src={{ BASE_DIR }}/bin/kube-bin/1.11.3/{{ item }} dest={{ BIN_DIR }}/{{ item }} mode=0755
+  with_items:
+  - kube-apiserver
+  - kube-controller-manager
+  - kube-scheduler
+  - kubectl
+  - kube-proxy
+  - kubelet
+
+- name: distribute kubernetes csr
+  template: src=kubernetes-csr.json.j2 dest={{ CA_DIR }}/kubernetes-csr.json
+
+- name: create kubernetes certs
+  shell: "cd {{ CA_DIR }} && {{ BIN_DIR }}/cfssl gencert \
+        -ca={{ CA_DIR }}/ca.pem \
+        -ca-key={{ CA_DIR }}/ca-key.pem \
+        -config={{ CA_DIR }}/ca-config.json \
+        -profile=kubernetes kubernetes-csr.json | {{ BIN_DIR }}/cfssljson -bare kubernetes"
+
+- name: distribute token.csv
+  template: src=token.csv.j2 dest={{ CA_DIR }}/token.csv
+
+- name: distribute kube-apiserver service configuration file
+  template: src=kube-apiserver.service.j2 dest=/etc/systemd/system/kube-apiserver.service
+
+- name: distribute kube-controller-manager service configuration file
+  template: src=kube-controller-manager.service.j2 dest=/etc/systemd/system/kube-controller-manager.service
+
+- name: distribute kube-scheduler service configuration file
+  template: src=kube-scheduler.service.j2 dest=/etc/systemd/system/kube-scheduler.service
+
+- name: daemon-reload
+  shell: systemctl daemon-reload
+
+- name: enable kube-apiserver service
+  shell: systemctl enable kube-apiserver
+
+- name: enable kube-controller-manager service
+  shell: systemctl enable kube-controller-manager
+
+- name: enable kube-scheduler service
+  shell: systemctl enable kube-scheduler
+
+- name: start kube-apiserver service
+  shell: systemctl restart kube-apiserver
+
+- name: start kube-controller-manager service
+  shell: systemctl restart kube-controller-manager
+
+- name: start kube-scheduler service
+  shell: systemctl restart kube-scheduler

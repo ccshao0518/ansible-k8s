@@ -1,0 +1,6 @@
+
+- hosts:
+  - etcd
+  - kube-cluster
+  roles:
+  - init

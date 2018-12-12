@@ -1,0 +1,25 @@
+- name: enable addon dirs
+  file: name={{ item }} state=directory
+  with_items:
+  - /root/local/addons/dashboard
+
+- name: distribute ds cm yaml
+  template: src=dashboard-configmap.yaml.j2 dest=/root/local/addons/dashboard/dashboard-configmap.yaml
+
+- name: distribute ds ctrl yaml
+  template: src=dashboard-controller.yaml.j2 dest=/root/local/addons/dashboard/dashboard-controller.yaml
+
+- name: distribute ds rbac yaml
+  template: src=dashboard-rbac.yaml.j2 dest=/root/local/addons/dashboard/dashboard-rbac.yaml
+
+- name: distribute ds secret yaml
+  template: src=dashboard-secret.yaml.j2 dest=/root/local/addons/dashboard/dashboard-secret.yaml
+
+- name: distribute ds service yaml
+  template: src=dashboard-service.yaml.j2 dest=/root/local/addons/dashboard/dashboard-service.yaml
+
+- name: start dashboard
+  shell: "{{ BIN_DIR }}/kubectl create -f /root/local/addons/dashboard/ && sleep 15"
+  when: NODE_ID is defined and NODE_ID == "node1"
+  ignore_errors: true
+

@@ -1,0 +1,19 @@
+[Unit]
+Description=Kubernetes Kube-Proxy Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+
+[Service]
+#disable SNAT by leave cluster-dir and masqurade-all configuration while using calico network policy
+WorkingDirectory=/var/lib/kube-proxy
+ExecStart={{ BIN_DIR }}/kube-proxy \
+  --bind-address={{ NODE_IP }} \
+  --kubeconfig=/etc/kubernetes/kube-proxy.kubeconfig \
+  --logtostderr=true \
+  --v=2
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

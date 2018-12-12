@@ -1,0 +1,73 @@
+# ansible node
+[ansible]
+172.16.19.234
+
+# etcd nodes
+[etcd]
+172.16.19.234 NODE_NAME="etcd1" NODE_IP="172.16.19.234"
+172.16.19.252 NODE_NAME="etcd2" NODE_IP="172.16.19.252"
+172.16.19.137 NODE_NAME="etcd3" NODE_IP="172.16.19.137"
+
+# kube-master nodes
+[kube-master]
+172.16.19.234 NODE_IP="172.16.19.234"
+172.16.19.252 NODE_IP="172.16.19.252"
+172.16.19.137 NODE_IP="172.16.19.137"
+
+#kube-node nodes
+[kube-node]
+172.16.19.234 NODE_ID="node1" NODE_IP="172.16.19.234"
+172.16.19.252 NODE_ID="node2" NODE_IP="172.16.19.252"
+172.16.19.137 NODE_ID="node3" NODE_IP="172.16.19.137"
+
+# kube-cluster nodes
+[kube-cluster:children]
+kube-master
+kube-node
+
+[all:vars]
+# Identify the BOOTSTRAP_TOKEN variable which would be used to help the kubelets to get the certs from apiserver
+# while kubelets talk to apiserver at the first time
+BOOTSTRAP_TOKEN="c80302226d4b810e08731702d2340f50"
+
+# Identify the SERVICE_CIDR variable which would be used to setup the iptables rules for kube services by kube-proxy
+SERVICE_CIDR="10.68.0.0/16"
+
+# Identify the CLUSTER_CIDR variable which would be used to help the apiserver generate and distribute the ip information to CNI while CNI setup the
+# pods' network
+CLUSTER_CIDR="172.20.0.0/16"
+
+# Identify the NODE_PORT_RANGE variable which would be used to set the node port of kube service
+NODE_PORT_RANGE="20000-60000"
+
+# Identify the CLUSTER_KUBERNETES_SVC_IP and CLUSTER_DNS_SVC_IP variables, CLUSTER_KUBERNETES_SVC_IP would be used in apiserver csr
+# and CLUSTER_DNS_SVC_IP would be distributed to dns service in kube cluster.
+CLUSTER_KUBERNETES_SVC_IP="10.68.0.1"
+CLUSTER_DNS_SVC_IP="10.68.0.2"
+
+# Identify the ETCD_NODES and ETCD_ENDPOINTS variables that would be set to etcd server and clients' configuration
+ETCD_NODES="etcd1=https://172.16.19.234:2380,etcd2=https://172.16.19.252:2380,etcd3=https://172.16.19.137:2380"
+ETCD_ENDPOINTS="https://172.16.19.234:2379,https://172.16.19.252:2379,https://172.16.19.137:2379"
+
+# Identify the KUBE_APISERVER varible
+KUBE_APISERVER="https://172.16.19.234:6443"
+
+# Identify the CLUSTER_DNS_DOMAIN variable
+CLUSTER_DNS_DOMAIN="cluster.local."
+
+# Identify the POD_INFRA_CONTAINER_IMAGE variable
+POD_INFRA_CONTAINER_IMAGE="172.16.19.225:5000/kairui/pause-amd64:3.0"
+
+# Identify the CALICO_IPV4POOL_IPIP varible
+CALICO_IPV4POOL_IPIP="always"
+
+# Identify the IP_AUTODETECTION_METHOD variable
+IP_AUTODETECTION_METHOD="can-reach=223.5.5.5"
+
+# Identify the some dirs variables
+BIN_DIR="/usr/bin"
+CA_DIR="/etc/kubernetes/ssl"
+BASE_DIR="/opt/Ansible-Kube20181025/"
+
+# Identify the docker daemon's configuration items
+insecure_registries="172.16.19.225:5000"

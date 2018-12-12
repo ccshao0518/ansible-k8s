@@ -1,0 +1,104 @@
+- name: enable kube node dirs
+  file: name={{ item }} state=directory
+  with_items:
+  - /var/lib/kubelet
+  - /var/lib/kube-proxy
+  - /etc/cni/net.d
+
+- name: distribute cni plugin binaries
+  copy: src={{ BASE_DIR }}/bin/cni-plugin-bin/0.7.1/{{ item }} dest={{ BIN_DIR }}/{{ item }} mode=0755
+  with_items:
+  - bridge
+  - host-local
+  - loopback
+
+- name: distribute kube binaries
+  copy: src={{ BASE_DIR }}/bin/kube-bin/1.11.3/{{ item }} dest={{ BIN_DIR }}/{{ item }} mode=0755
+  with_items:
+  - kubelet
+  - kube-proxy
+
+- name: create clusterrolebinding to bind user kubelet-bootstrap to system:node-bootstrapper
+  shell: "sleep 15 && {{ BIN_DIR }}/kubectl create clusterrolebinding kubelet-bootstrap \
+        --clusterrole=system:node-bootstrapper --user=kubelet-bootstrap"
+  when: NODE_ID is defined and NODE_ID == "node1"
+  ignore_errors: true
+
+- name: set cluster params
+  shell: "{{ BIN_DIR }}/kubectl config set-cluster kubernetes \
+        --certificate-authority={{ CA_DIR }}/ca.pem \
+        --embed-certs=true \
+        --server={{ KUBE_APISERVER }} \
+        --kubeconfig=bootstrap.kubeconfig"
+- name: set certs params
+  shell: "{{ BIN_DIR }}/kubectl config set-credentials kubelet-bootstrap \
+        --token={{ BOOTSTRAP_TOKEN }} \
+        --kubeconfig=bootstrap.kubeconfig"
+- name: set context params
+  shell: "{{ BIN_DIR }}/kubectl config set-context default \
+	--cluster=kubernetes \
+	--user=kubelet-bootstrap \
+	--kubeconfig=bootstrap.kubeconfig"
+- name: set default context params
+  shell: "{{ BIN_DIR }}/kubectl config use-context default --kubeconfig=bootstrap.kubeconfig"
+
+- name: move bootstrap.kubeconfig to proper path
+  shell: "mv /root/bootstrap.kubeconfig /etc/kubernetes/bootstrap.kubeconfig"
+
+- name: distribute default cni configuration
+  template: src=cni-default.conf.j2 dest=/etc/cni/net.d/10-default.conf
+
+- name: distribute kubelet service configuration file
+  template: src=kubelet.service.j2 dest=/etc/systemd/system/kubelet.service
+  tags: kubelet
+
+- name: daemon-reload, enable and start kubelet service
+  shell: systemctl daemon-reload && systemctl enable kubelet && systemctl restart kubelet
+  tags: kubelet
+
+- name: approve kubelet's csr
+  shell: "sleep 15 && {{ BIN_DIR }}/kubectl get csr|grep 'Pending' | awk 'NR>0{print $1}'| xargs {{ BIN_DIR }}/kubectl certificate approve"
+  when: NODE_ID is defined and NODE_ID == "node1"
+  ignore_errors: true
+
+- name: distribute kube-proxy csr
+  template: src=kube-proxy-csr.json.j2 dest={{ CA_DIR }}/kube-proxy-csr.json
+
+- name: create kube-proxy certs
+  shell: "cd {{ CA_DIR }} && {{ BIN_DIR }}/cfssl gencert \
+        -ca={{ CA_DIR }}/ca.pem \
+        -ca-key={{ CA_DIR }}/ca-key.pem \
+        -config={{ CA_DIR }}/ca-config.json \
+        -profile=kubernetes kube-proxy-csr.json | {{ BIN_DIR }}/cfssljson -bare kube-proxy"
+
+- name: set cluster params
+  shell: "{{ BIN_DIR }}/kubectl config set-cluster kubernetes \
+        --certificate-authority={{ CA_DIR }}/ca.pem \
+        --embed-certs=true \
+        --server={{ KUBE_APISERVER }} \
+        --kubeconfig=kube-proxy.kubeconfig"
+- name: set certs params
+  shell: "{{ BIN_DIR }}/kubectl config set-credentials kube-proxy \
+	--client-certificate={{ CA_DIR }}/kube-proxy.pem \
+	--client-key={{ CA_DIR }}/kube-proxy-key.pem \
+        --embed-certs=true \
+        --kubeconfig=kube-proxy.kubeconfig"
+- name: set context params
+  shell: "{{ BIN_DIR }}/kubectl config set-context default \
+        --cluster=kubernetes \
+        --user=kube-proxy \
+        --kubeconfig=kube-proxy.kubeconfig"
+- name: set default context params
+  shell: "{{ BIN_DIR }}/kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig"
+
+- name: move kube-proxy.kubeconfig to proper path
+  shell: "mv /root/kube-proxy.kubeconfig /etc/kubernetes/kube-proxy.kubeconfig"
+
+- name: distribute kube-proxy service configuration file
+  tags: reload-kube-proxy
+  template: src=kube-proxy.service.j2 dest=/etc/systemd/system/kube-proxy.service
+
+- name: daemon-reload, enable and start kube-proxy
+  tags: reload-kube-proxy
+  shell: systemctl daemon-reload && systemctl enable kube-proxy && systemctl restart kube-proxy
+

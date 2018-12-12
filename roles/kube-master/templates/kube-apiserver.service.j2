@@ -1,0 +1,40 @@
+[Unit]
+Description=Kubernetes API Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+
+[Service]
+ExecStart={{ BIN_DIR }}/kube-apiserver \
+  --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,NodeRestriction \
+  --bind-address={{ NODE_IP }} \
+  --insecure-bind-address=127.0.0.1 \
+  --authorization-mode=Node,RBAC \
+  --kubelet-https=true \
+  --anonymous-auth=false \
+  --enable-bootstrap-token-auth \
+  --token-auth-file={{ CA_DIR }}/token.csv \
+  --service-cluster-ip-range={{ SERVICE_CIDR }} \
+  --service-node-port-range={{ NODE_PORT_RANGE }} \
+  --tls-cert-file={{ CA_DIR }}/kubernetes.pem \
+  --tls-private-key-file={{ CA_DIR }}/kubernetes-key.pem \
+  --client-ca-file={{ CA_DIR }}/ca.pem \
+  --service-account-key-file={{ CA_DIR }}/ca-key.pem \
+  --etcd-cafile={{ CA_DIR }}/ca.pem \
+  --etcd-certfile={{ CA_DIR }}/kubernetes.pem \
+  --etcd-keyfile={{ CA_DIR }}/kubernetes-key.pem \
+  --etcd-servers={{ ETCD_ENDPOINTS }} \
+  --enable-swagger-ui=true \
+  --allow-privileged=true \
+  --audit-log-maxage=30 \
+  --audit-log-maxbackup=3 \
+  --audit-log-maxsize=100 \
+  --audit-log-path=/var/lib/audit.log \
+  --event-ttl=1h \
+  --v=2
+Restart=on-failure
+RestartSec=5
+Type=notify
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
